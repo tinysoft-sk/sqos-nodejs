@@ -1,0 +1,29 @@
+# Source
+src/
+
+# Tests
+tests/
+coverage/
+.nyc_output/
+
+# Config files
+.travis.yml
+.github/
+.vscode/
+tsconfig.json
+jest.config.js
+.eslintrc.js
+.prettierrc
+.gitignore
+
+# Examples
+examples/
+
+# Logs
+logs
+*.log
+
+# Editor directories and files
+.idea
+*.swp
+*.swo

@@ -1,0 +1,62 @@
+{
+    "name": "sqos-nodejs",
+    "version": "0.1.0",
+    "description": "Node.js library for processing messages from AWS SQS.",
+    "main": "dist/index.js",
+    "types": "dist/index.d.ts",
+    "author": "Tinysoft s.r.o.",
+    "license": "MIT",
+    "homepage": "https://github.com/tinysoft-sk/sqos-nodejs#readme",
+    "files": [
+        "dist",
+        "LICENSE",
+        "README.md",
+        "CHANGELOG.md"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/tinysoft-sk/sqos-nodejs.git"
+    },
+    "keywords": [
+        "sqs",
+        "aws",
+        "queue",
+        "nodejs",
+        "typescript"
+    ],
+    "scripts": {
+        "build": "tsc",
+        "clean": "rimraf dist",
+        "lint": "eslint src --ext .ts",
+        "format": "prettier --write \"src/**/*.ts\"",
+        "test": "jest",
+        "test:watch": "jest --watch",
+        "test:coverage": "jest --coverage",
+        "prepare": "npm run clean && npm run build",
+        "prepublishOnly": "npm run lint && npm test",
+        "preversion": "npm run lint",
+        "version": "npm run format && git add -A src",
+        "postversion": "git push && git push --tags"
+    },
+    "dependencies": {
+        "@aws-sdk/client-sqs": "^3.x"
+    },
+    "devDependencies": {
+        "@types/jest": "^29.5.3",
+        "@types/node": "^18.16.0",
+        "@types/uuid": "^9.0.2",
+        "@typescript-eslint/eslint-plugin": "^6.2.1",
+        "@typescript-eslint/parser": "^6.2.1",
+        "eslint": "^8.46.0",
+        "eslint-config-prettier": "^8.10.0",
+        "eslint-plugin-prettier": "^5.0.0",
+        "jest": "^29.6.2",
+        "prettier": "^3.0.1",
+        "rimraf": "^5.0.1",
+        "ts-jest": "^29.1.1",
+        "typescript": "^5.1.6"
+    },
+    "engines": {
+        "node": ">=14.0.0"
+    }
+}
