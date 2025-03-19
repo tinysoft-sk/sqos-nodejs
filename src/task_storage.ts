@@ -32,33 +32,33 @@ export class TaskStorage extends EventDispatcher {
 
     public setProcessing(taskId: string): void {
         const task = this._getTaskById(taskId)
-        if (!task) {
-            throw new Error("Task not found")
+        if (task) {
+            task.status = "processing"
+        } else {
+            console.error("sqos-nodejs: setProcessing(): task not found", taskId)
         }
-
-        task.status = "processing"
         this._emitMetrics()
         this._refreshLocks()
     }
 
     public setFinished(taskId: string): void {
         const task = this._getTaskById(taskId)
-        if (!task) {
-            throw new Error("Task not found")
+        if (task) {
+            this._tasks = removeItemsByIdFromArray(this._tasks, task.id)
+        } else {
+            console.error("sqos-nodejs: setFinished(): task not found", taskId)
         }
-
-        this._tasks = removeItemsByIdFromArray(this._tasks, task.id)
         this._emitMetrics()
         this._refreshLocks()
     }
 
     public setDiscarded(taskId: string): void {
         const task = this._getTaskById(taskId)
-        if (!task) {
-            throw new Error("Task not found")
+        if (task) {
+            this._tasks = removeItemsByIdAndGroupIdFromArray(this._tasks, task.id, task.groupId)
+        } else {
+            console.error("sqos-nodejs: setDiscarded(): task not found", taskId)
         }
-
-        this._tasks = removeItemsByIdAndGroupIdFromArray(this._tasks, task.id, task.groupId)
         this._emitMetrics()
         this._refreshLocks()
     }
