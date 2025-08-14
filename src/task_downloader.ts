@@ -78,6 +78,9 @@ export class TaskDownloader extends EventDispatcher {
                     await sleep(this.pollingWaitTimeMs)
                 }
             } catch (err) {
+                if (err instanceof Error && err.name === "AbortError" && this.abortController.signal.aborted) {
+                    return
+                }
                 this.dispatch("error", err)
                 await sleep(15000)
             }

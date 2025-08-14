@@ -22,7 +22,6 @@ export class TaskProcessor extends EventDispatcher {
 
     public stop(): void {
         this.running = false
-        this.storage.shouldWaitForNext.open()
     }
 
     public async waitForStop(): Promise<void> {
