@@ -13,6 +13,7 @@ export class TaskDownloader extends EventDispatcher {
     private downloadTask?: Promise<void>
     private pollingWaitTimeMs: number
     private waitTimeSeconds: number
+    private abortController: AbortController
 
     constructor(
         sqs: SQSClient,
@@ -30,15 +31,18 @@ export class TaskDownloader extends EventDispatcher {
         this.running = true
         this.pollingWaitTimeMs = pollingWaitTimeMs
         this.waitTimeSeconds = waitTimeSeconds
+        this.abortController = new AbortController()
     }
 
     start(): void {
         this.running = true
+        this.abortController = new AbortController()
         this.downloadTask = this.runInfiniteLoop()
     }
 
     stop(): void {
         this.running = false
+        this.abortController.abort()
     }
 
     async waitForStop(): Promise<void> {
@@ -63,6 +67,7 @@ export class TaskDownloader extends EventDispatcher {
                         AttributeNames: ["MessageGroupId", "SentTimestamp"] as unknown as QueueAttributeName[],
                         MessageAttributeNames: ["All"],
                     }),
+                    { abortSignal: this.abortController.signal },
                 )
 
                 const messages = response.Messages || []
