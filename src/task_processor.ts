@@ -38,7 +38,9 @@ export class TaskProcessor extends EventDispatcher {
             }
             const task = this.storage.getNext()
             if (!task) {
-                return
+                console.warn("sqos-nodejs: TaskProcessor woke up but no task found. Retrying...")
+                await new Promise((resolve) => setTimeout(resolve, 10))
+                continue
             }
             this.storage.setProcessing(task.id)
             void this.handler(task)
