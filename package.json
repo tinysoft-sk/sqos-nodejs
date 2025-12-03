@@ -1,6 +1,6 @@
 {
     "name": "@tinysoft-sk/sqos-nodejs",
-    "version": "0.1.5",
+    "version": "0.1.6",
     "description": "Node.js library for processing messages from AWS SQS.",
     "main": "dist/index.js",
     "types": "dist/index.d.ts",

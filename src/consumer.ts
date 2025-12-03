@@ -1,10 +1,12 @@
-import { DeleteMessageCommand, SQSClient } from "@aws-sdk/client-sqs"
+import { DeleteMessageCommand, ChangeMessageVisibilityCommand, SQSClient } from "@aws-sdk/client-sqs"
 import { EventDispatcher } from "./event_dispatcher"
 import { Task } from "./task"
 import { TaskDownloader } from "./task_downloader"
 import { TaskProcessor } from "./task_processor"
 import { TaskStorage } from "./task_storage"
 import { TaskVisibilityTimeoutManager } from "./task_visibility_timeout_manager"
+
+export type OnFailureBehaviour = "delete-message" | "delete-group"
 
 export type ConsumerOptions = {
     sqs?: SQSClient
@@ -13,6 +15,7 @@ export type ConsumerOptions = {
     heartbeatInterval?: number
     pollingWaitTimeMs?: number
     waitTimeSeconds?: number
+    onFailureBehaviour?: OnFailureBehaviour
     handler: (payload: unknown) => Promise<void>
 }
 
@@ -24,6 +27,7 @@ export class Consumer extends EventDispatcher {
     private taskProcessor: TaskProcessor
     private taskVisibilityTimeoutManager: TaskVisibilityTimeoutManager
     private handler: (payload: unknown) => Promise<void>
+    private onFailureBehaviour: OnFailureBehaviour
 
     constructor({
         sqs = new SQSClient({}),
@@ -31,6 +35,7 @@ export class Consumer extends EventDispatcher {
         heartbeatInterval = 15,
         pollingWaitTimeMs = 0,
         waitTimeSeconds = 20,
+        onFailureBehaviour = "delete-message",
         queueUrl,
         handler,
     }: ConsumerOptions) {
@@ -38,6 +43,7 @@ export class Consumer extends EventDispatcher {
         this.sqs = sqs
         this.queueUrl = queueUrl
         this.handler = handler
+        this.onFailureBehaviour = onFailureBehaviour
         this.storage = new TaskStorage(batchSize)
         this.taskDownloader = new TaskDownloader(
             sqs,
@@ -110,8 +116,20 @@ export class Consumer extends EventDispatcher {
                 }),
             )
         } catch (e) {
-            this.storage.setDiscarded(task.id)
+            this.storage.setDiscarded(task.id, this.onFailureBehaviour)
             this.dispatch("message_error", [task.payload, e])
+
+            try {
+                await this.sqs.send(
+                    new ChangeMessageVisibilityCommand({
+                        QueueUrl: this.queueUrl,
+                        ReceiptHandle: task.handle as string,
+                        VisibilityTimeout: 0,
+                    }),
+                )
+            } catch (visibilityError) {
+                this.dispatch("error", ["Failed to change visibility timeout", visibilityError])
+            }
         }
     }
 }

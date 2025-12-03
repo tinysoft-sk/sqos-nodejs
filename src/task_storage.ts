@@ -52,10 +52,14 @@ export class TaskStorage extends EventDispatcher {
         this._refreshLocks()
     }
 
-    public setDiscarded(taskId: string): void {
+    public setDiscarded(taskId: string, behaviour: "delete-message" | "delete-group"): void {
         const task = this._getTaskById(taskId)
         if (task) {
-            this._tasks = removeItemsByIdAndGroupIdFromArray(this._tasks, task.id, task.groupId)
+            if (behaviour === "delete-message") {
+                this._tasks = removeItemsByIdFromArray(this._tasks, task.id)
+            } else {
+                this._tasks = removeItemsByIdAndGroupIdFromArray(this._tasks, task.id, task.groupId)
+            }
         } else {
             console.error("sqos-nodejs: setDiscarded(): task not found", taskId)
         }
