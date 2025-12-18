@@ -7,6 +7,7 @@ export class TaskProcessor extends EventDispatcher {
     private storage: TaskStorage
     private running: boolean
     private handler: (task: Task) => Promise<void>
+    private activeHandlers: Set<Promise<void>> = new Set()
 
     constructor(storage: TaskStorage, handler: (task: Task) => Promise<void>) {
         super()
@@ -22,6 +23,8 @@ export class TaskProcessor extends EventDispatcher {
 
     public stop(): void {
         this.running = false
+        // Unblock the runInfiniteLoop if it's waiting for new tasks
+        this.storage.shouldWaitForNext.open()
     }
 
     public async waitForStop(): Promise<void> {
@@ -31,19 +34,24 @@ export class TaskProcessor extends EventDispatcher {
     }
 
     private async runInfiniteLoop(): Promise<void> {
-        while (this.running) {
-            await this.storage.shouldWaitForNext.wait()
-            if (!this.running) {
-                return
-            }
+        while (this.running || !this.storage.isEmpty()) {
             const task = this.storage.getNext()
+
             if (!task) {
-                console.warn("sqos-nodejs: TaskProcessor woke up but no task found. Retrying...")
-                await new Promise((resolve) => setTimeout(resolve, 10))
+                if (!this.running) {
+                    break
+                }
+                await this.storage.shouldWaitForNext.wait()
                 continue
             }
+
             this.storage.setProcessing(task.id)
-            void this.handler(task)
+            const handlerPromise = this.handler(task)
+            this.activeHandlers.add(handlerPromise)
+            void handlerPromise.finally(() => {
+                this.activeHandlers.delete(handlerPromise)
+            })
         }
+        await Promise.allSettled(this.activeHandlers)
     }
 }

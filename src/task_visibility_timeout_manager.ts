@@ -2,7 +2,7 @@ import { ChangeMessageVisibilityBatchCommand, SQSClient } from "@aws-sdk/client-
 import { EventDispatcher } from "./event_dispatcher"
 import { Task } from "./task"
 import { TaskStorage } from "./task_storage"
-import { constructMessageVisibilityBatchRequest, sleep, splitEvery } from "./utils"
+import { constructMessageVisibilityBatchRequest, splitEvery } from "./utils"
 
 export class TaskVisibilityTimeoutManager extends EventDispatcher {
     private sqs: SQSClient
@@ -11,6 +11,7 @@ export class TaskVisibilityTimeoutManager extends EventDispatcher {
     private queueUrl: string
     private running: boolean
     private heartbeatInterval: number
+    private abortController: AbortController
 
     constructor(sqs: SQSClient, queueUrl: string, storage: TaskStorage, heartbeatInterval: number) {
         super()
@@ -19,15 +20,19 @@ export class TaskVisibilityTimeoutManager extends EventDispatcher {
         this.storage = storage
         this.heartbeatInterval = heartbeatInterval
         this.running = true
+        this.abortController = new AbortController()
     }
 
     public start(): void {
         this.running = true
+        this.abortController = new AbortController()
         this.task = this.runInfiniteLoop()
     }
 
     public stop(): void {
         this.running = false
+        this.abortController.abort()
+        this.storage.isNotEmpty.open()
     }
 
     public async waitForStop(): Promise<void> {
@@ -44,7 +49,20 @@ export class TaskVisibilityTimeoutManager extends EventDispatcher {
                 return
             }
 
-            await sleep(this.heartbeatInterval * 1000)
+            try {
+                await new Promise((resolve, reject) => {
+                    const timeout = setTimeout(resolve, this.heartbeatInterval * 1000)
+                    this.abortController.signal.addEventListener("abort", () => {
+                        clearTimeout(timeout)
+                        reject(new Error("Aborted"))
+                    })
+                })
+            } catch (e) {
+                if (this.running) {
+                    this.dispatch("error", e)
+                }
+                return
+            }
 
             try {
                 const tasks = this.storage.getProcessingTasks()

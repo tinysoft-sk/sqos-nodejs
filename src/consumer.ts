@@ -87,7 +87,6 @@ export class Consumer extends EventDispatcher {
         this.taskProcessor.stop()
         this.taskVisibilityTimeoutManager.stop()
 
-        this.storage.isNotEmpty.open()
         this.storage.isNotFull.open()
         this.storage.shouldWaitForNext.open()
     }
