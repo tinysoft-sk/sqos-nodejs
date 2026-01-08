@@ -95,11 +95,6 @@ export class TaskStorage extends EventDispatcher {
             this.shouldWaitForNext.open()
         }
 
-        // If storage becomes empty, we might need to wake up TaskProcessor to let it exit
-        if (this._tasks.length === 0) {
-            this.shouldWaitForNext.open()
-        }
-
         if (this._tasks.length === 0) {
             this.isNotEmpty.close()
         } else {
