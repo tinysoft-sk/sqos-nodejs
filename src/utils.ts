@@ -6,6 +6,7 @@ export const sleep = async (ms: number): Promise<void> => {
 
 export const constructMessageVisibilityBatchRequest = (
     tasks: Task[],
+    visibilityTimeout: number,
 ): Array<{
     Id: string
     ReceiptHandle: string
@@ -14,7 +15,7 @@ export const constructMessageVisibilityBatchRequest = (
     return tasks.map((x, i) => ({
         Id: `task-${i}-${Date.now()}`,
         ReceiptHandle: x.handle as string,
-        VisibilityTimeout: 30,
+        VisibilityTimeout: visibilityTimeout,
     }))
 }
 

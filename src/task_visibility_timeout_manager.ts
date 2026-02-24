@@ -11,14 +11,22 @@ export class TaskVisibilityTimeoutManager extends EventDispatcher {
     private queueUrl: string
     private running: boolean
     private heartbeatInterval: number
+    private visibilityTimeout: number
     private abortController: AbortController
 
-    constructor(sqs: SQSClient, queueUrl: string, storage: TaskStorage, heartbeatInterval: number) {
+    constructor(
+        sqs: SQSClient,
+        queueUrl: string,
+        storage: TaskStorage,
+        heartbeatInterval: number,
+        visibilityTimeout: number,
+    ) {
         super()
         this.sqs = sqs
         this.queueUrl = queueUrl
         this.storage = storage
         this.heartbeatInterval = heartbeatInterval
+        this.visibilityTimeout = visibilityTimeout
         this.running = true
         this.abortController = new AbortController()
     }
@@ -51,11 +59,17 @@ export class TaskVisibilityTimeoutManager extends EventDispatcher {
 
             try {
                 await new Promise((resolve, reject) => {
-                    const timeout = setTimeout(resolve, this.heartbeatInterval * 1000)
-                    this.abortController.signal.addEventListener("abort", () => {
+                    const timeout = setTimeout(() => {
+                        this.abortController.signal.removeEventListener("abort", onAbort)
+                        resolve(undefined)
+                    }, this.heartbeatInterval * 1000)
+
+                    const onAbort = () => {
                         clearTimeout(timeout)
                         reject(new Error("Aborted"))
-                    })
+                    }
+
+                    this.abortController.signal.addEventListener("abort", onAbort, { once: true })
                 })
             } catch (e) {
                 if (this.running) {
@@ -72,7 +86,7 @@ export class TaskVisibilityTimeoutManager extends EventDispatcher {
                     await this.sqs.send(
                         new ChangeMessageVisibilityBatchCommand({
                             QueueUrl: this.queueUrl,
-                            Entries: constructMessageVisibilityBatchRequest(chunk),
+                            Entries: constructMessageVisibilityBatchRequest(chunk, this.visibilityTimeout),
                         }),
                     )
                 }

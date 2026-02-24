@@ -7,7 +7,7 @@ describe("TaskVisibilityTimeoutManager Unit Tests", () => {
         const mockSqs: any = { send: jest.fn() }
 
         // Large interval, but we want it to stop fast
-        const manager = new TaskVisibilityTimeoutManager(mockSqs, "url", storage, 60)
+        const manager = new TaskVisibilityTimeoutManager(mockSqs, "url", storage, 60, 60)
 
         manager.start()
 

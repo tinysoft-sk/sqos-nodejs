@@ -13,6 +13,7 @@ export type ConsumerOptions = {
     queueUrl: string
     batchSize?: number
     heartbeatInterval?: number
+    visibilityTimeout?: number
     pollingWaitTimeMs?: number
     waitTimeSeconds?: number
     onFailureBehaviour?: OnFailureBehaviour
@@ -32,7 +33,8 @@ export class Consumer extends EventDispatcher {
     constructor({
         sqs = new SQSClient({}),
         batchSize = 10,
-        heartbeatInterval = 15,
+        heartbeatInterval = 10,
+        visibilityTimeout = 60,
         pollingWaitTimeMs = 0,
         waitTimeSeconds = 20,
         onFailureBehaviour = "delete-message",
@@ -58,6 +60,7 @@ export class Consumer extends EventDispatcher {
             queueUrl,
             this.storage,
             heartbeatInterval,
+            visibilityTimeout,
         )
         this.taskProcessor = new TaskProcessor(this.storage, this._processMessage.bind(this))
 
