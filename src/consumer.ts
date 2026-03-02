@@ -16,6 +16,7 @@ export type ConsumerOptions = {
     visibilityTimeout?: number
     pollingWaitTimeMs?: number
     waitTimeSeconds?: number
+    attributeNames?: string[]
     onFailureBehaviour?: OnFailureBehaviour
     handler: (payload: unknown) => Promise<void>
 }
@@ -37,6 +38,7 @@ export class Consumer extends EventDispatcher {
         visibilityTimeout = 60,
         pollingWaitTimeMs = 0,
         waitTimeSeconds = 20,
+        attributeNames = [],
         onFailureBehaviour = "delete-message",
         queueUrl,
         handler,
@@ -54,6 +56,7 @@ export class Consumer extends EventDispatcher {
             batchSize,
             pollingWaitTimeMs,
             waitTimeSeconds,
+            attributeNames,
         )
         this.taskVisibilityTimeoutManager = new TaskVisibilityTimeoutManager(
             sqs,

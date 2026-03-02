@@ -13,6 +13,7 @@ export class TaskDownloader extends EventDispatcher {
     private downloadTask?: Promise<void>
     private pollingWaitTimeMs: number
     private waitTimeSeconds: number
+    private attributeNames: string[]
     private abortController: AbortController
 
     constructor(
@@ -22,6 +23,7 @@ export class TaskDownloader extends EventDispatcher {
         batchSize: number,
         pollingWaitTimeMs: number,
         waitTimeSeconds: number,
+        attributeNames: string[],
     ) {
         super()
         this.sqs = sqs
@@ -31,6 +33,7 @@ export class TaskDownloader extends EventDispatcher {
         this.running = true
         this.pollingWaitTimeMs = pollingWaitTimeMs
         this.waitTimeSeconds = waitTimeSeconds
+        this.attributeNames = [...new Set(["MessageGroupId", ...attributeNames])]
         this.abortController = new AbortController()
     }
 
@@ -64,7 +67,7 @@ export class TaskDownloader extends EventDispatcher {
                         QueueUrl: this.queueUrl,
                         MaxNumberOfMessages: Math.min(this.batchSize, 10),
                         WaitTimeSeconds: this.waitTimeSeconds,
-                        AttributeNames: ["MessageGroupId", "SentTimestamp"] as unknown as QueueAttributeName[],
+                        AttributeNames: this.attributeNames as QueueAttributeName[],
                         MessageAttributeNames: ["All"],
                     }),
                     { abortSignal: this.abortController.signal },
