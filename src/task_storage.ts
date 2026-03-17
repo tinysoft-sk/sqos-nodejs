@@ -67,6 +67,15 @@ export class TaskStorage extends EventDispatcher {
         this._refreshLocks()
     }
 
+    public evictTask(taskId: string): void {
+        const task = this._getTaskById(taskId)
+        if (task) {
+            this._tasks = removeItemsByIdFromArray(this._tasks, task.id)
+        }
+        this._emitMetrics()
+        this._refreshLocks()
+    }
+
     public getNext(): Task | null {
         if (this._tasks.filter((x) => x.status === "processing").length >= this._capacity) {
             return null

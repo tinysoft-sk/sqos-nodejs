@@ -12,8 +12,8 @@ export const constructMessageVisibilityBatchRequest = (
     ReceiptHandle: string
     VisibilityTimeout: number
 }> => {
-    return tasks.map((x, i) => ({
-        Id: `task-${i}-${Date.now()}`,
+    return tasks.map((x) => ({
+        Id: x.id,
         ReceiptHandle: x.handle as string,
         VisibilityTimeout: visibilityTimeout,
     }))

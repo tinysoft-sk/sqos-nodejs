@@ -83,12 +83,28 @@ export class TaskVisibilityTimeoutManager extends EventDispatcher {
                 const chunks: Task[][] = splitEvery(tasks, 10)
 
                 for (const chunk of chunks) {
-                    await this.sqs.send(
+                    const response = await this.sqs.send(
                         new ChangeMessageVisibilityBatchCommand({
                             QueueUrl: this.queueUrl,
                             Entries: constructMessageVisibilityBatchRequest(chunk, this.visibilityTimeout),
                         }),
                     )
+
+                    if (response.Failed && response.Failed.length > 0) {
+                        for (const failure of response.Failed) {
+                            const taskId = failure.Id!
+                            this.storage.evictTask(taskId)
+                            this.dispatch("error", [
+                                "Failed to extend visibility timeout, evicting task",
+                                {
+                                    taskId,
+                                    code: failure.Code,
+                                    message: failure.Message,
+                                    senderFault: failure.SenderFault,
+                                },
+                            ])
+                        }
+                    }
                 }
             } catch (e) {
                 this.dispatch("error", e)
