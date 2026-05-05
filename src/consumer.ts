@@ -1,4 +1,4 @@
-import { DeleteMessageCommand, ChangeMessageVisibilityCommand, SQSClient } from "@aws-sdk/client-sqs"
+import { DeleteMessageCommand, SQSClient } from "@aws-sdk/client-sqs"
 import { EventDispatcher } from "./event_dispatcher"
 import { Task } from "./task"
 import { TaskDownloader } from "./task_downloader"
@@ -123,18 +123,6 @@ export class Consumer extends EventDispatcher {
         } catch (e) {
             this.storage.setDiscarded(task.id, this.onFailureBehaviour)
             this.dispatch("message_error", [task.payload, e])
-
-            try {
-                await this.sqs.send(
-                    new ChangeMessageVisibilityCommand({
-                        QueueUrl: this.queueUrl,
-                        ReceiptHandle: task.handle as string,
-                        VisibilityTimeout: 0,
-                    }),
-                )
-            } catch (visibilityError) {
-                this.dispatch("error", ["Failed to change visibility timeout", visibilityError])
-            }
         }
     }
 }
