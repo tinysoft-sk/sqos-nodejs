@@ -5,4 +5,5 @@ export interface Task {
     handle?: string
     payload?: any
     groupId?: string | null
+    addedAt?: number
 }

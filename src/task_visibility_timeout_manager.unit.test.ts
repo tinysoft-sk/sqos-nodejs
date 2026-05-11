@@ -158,4 +158,25 @@ describe("TaskVisibilityTimeoutManager Unit Tests", () => {
         // Error should still be dispatched
         expect(errors.length).toBeGreaterThanOrEqual(1)
     })
+
+    it("should not extend visibility for tasks younger than heartbeatInterval / 2", async () => {
+        const storage = new TaskStorage(10)
+        const mockSqs: any = { send: jest.fn() }
+
+        const manager = new TaskVisibilityTimeoutManager(mockSqs, "url", storage, 0.01, 60)
+
+        storage.addTasks([{ id: "task-1", status: "processing", groupId: "group-a" }])
+        // Stamp addedAt far in the future so the task always looks too young to extend
+        storage.getProcessingTasks()[0].addedAt = Date.now() + 60_000
+
+        manager.start()
+
+        // Wait for several heartbeat cycles
+        await new Promise((resolve) => setTimeout(resolve, 50))
+
+        manager.stop()
+        await manager.waitForStop()
+
+        expect(mockSqs.send).not.toHaveBeenCalled()
+    })
 })

@@ -79,7 +79,11 @@ export class TaskVisibilityTimeoutManager extends EventDispatcher {
             }
 
             try {
-                const tasks = this.storage.getProcessingTasks()
+                const now = Date.now()
+                const minAgeMs = (this.heartbeatInterval / 2) * 1000
+                const tasks = this.storage
+                    .getProcessingTasks()
+                    .filter((t) => t.addedAt !== undefined && now - t.addedAt >= minAgeMs)
                 const chunks: Task[][] = splitEvery(tasks, 10)
 
                 for (const chunk of chunks) {

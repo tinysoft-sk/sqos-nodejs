@@ -8,6 +8,7 @@ interface Task {
     id: string
     status: string
     groupId?: string | null
+    addedAt?: number
 }
 
 export class TaskStorage extends EventDispatcher {
@@ -25,7 +26,9 @@ export class TaskStorage extends EventDispatcher {
     }
 
     public addTasks(tasks: Task[]): void {
-        this._tasks.push(...tasks)
+        const now = Date.now()
+        const tasksWithTimestamp = tasks.map((t) => ({ ...t, addedAt: now }))
+        this._tasks.push(...tasksWithTimestamp)
         this._emitMetrics()
         this._refreshLocks()
     }
